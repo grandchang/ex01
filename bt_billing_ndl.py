@@ -19,7 +19,7 @@ files = []
 for f in os.listdir('.'):
     if re.match(r'BT_Billing_\d{12}.xls$',f):
         files.append(f)
-print(files)
+print(files[10:])
 sleep(3)
 ## No need remove old file
 # for f in files:
