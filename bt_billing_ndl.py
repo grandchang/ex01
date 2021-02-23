@@ -15,53 +15,20 @@ from time import sleep
 
 # download bt_billing and save to daily_billing
 # print(os.listdir('.'))
+print(os.listdir('.'))
 files = []
 for f in os.listdir('.'):
+    # print(f)
     if re.match(r'BT_Billing_\d{12}.xls$',f):
         files.append(f)
-print(files[10:])
-sleep(3)
+        print('===>>', f[15:23])
+
 ## No need remove old file
 # for f in files:
 #     os.remove(f)
 #     print(f,'is removed')
 
 # # No need seleium webdriver that for download file. Line 30~63.
-# from selenium import webdriver
-# # from chromedriver_py import binary_path
-# from selenium.webdriver.chrome.options import Options
-# from webdriver_manager.chrome import ChromeDriverManager
-# options = Options()
-# options.add_experimental_option("prefs",{"download.default_directory": r"D:\coding\daily_billing"})
-# driver = webdriver.Chrome(executable_path=ChromeDriverManager().install(), chrome_options=options) 
-
-
-# # launch chrome to open the following URL 
-# url = 'http://mpserver.supermicro.com/mrpbt/BtBillingQueryByRef.aspx'
-# driver.get(url)
-# # Click Display button to show latest data 
-# driver.find_element_by_name('btnDisplay').click()
-
-# # Timeout to wait for query 
-# sleep(3)
-
-# # 43~45 Click “Display in Excel” to save the query result as BoQueryTW.aspx
-# driver.find_element_by_name('btnExport').click() 
-# sleep(10)
-# driver.close()
-# sleep(3)
-# # finish download
-# #! ls *.xls
-# print(os.listdir('.'))
-# files = []
-# for f in os.listdir('.'):
-#     if re.match(r'BT_Billing_\d{12}.xls$',f):
-#         files.append(f)
-# print(files)
-# input('Press any Key to continue......')
-
-# # # finish download
-
 
 # Shorten key long file name. Just key mmddhhmm.
 a_Fname = 'BT_Billing_'
@@ -70,7 +37,6 @@ c_Fname = input('Key file date "mmddhhmm"')
 d_Fname = '.xls'
 filename = a_Fname + b_Fname + c_Fname + d_Fname
 print (filename)
-
 
 currentPath= pathlib.Path().absolute()
 
@@ -122,16 +88,12 @@ solddata = solddata.merge(itemno_cat, how='left', left_on='Itemno', right_on='It
 solddata['Date']= pd.to_datetime(solddata['Date'].astype(str), format='%Y%m%d')
 solddata['Date']= solddata['Date'].apply(lambda x:x.strftime('%Y-%m-%d'))
 # Covert Date type from object to datetime and Change Date format to be 2020-01-01
-# print(solddata)
-# uptoShip = solddata.cumsum(solddata['Qty'], axis =1)
 
 # Write new dataframe to sheet name= New_DF;
 
 solddata.to_excel(writer, sheet_name= 'New_DF',na_rep=False,index=True,header=True)
 
 # Summary each day shipment amount;
-# solddata.groupby(['Date']).sum().plot(kind='bar',x='Date', figsize=(12,6), fontsize= 7, rot=45, title='Daily Shipment')
-# solddata.groupby(['Date']).agg(sum).reset_index().plot(kind='bar',x='Date', figsize=(8,6), fontsize= 7, rot=45, title='Daily Shipment')
 
 dailyShip=solddata.groupby(['Date']).agg(sum).reset_index()
 temp=dailyShip[['Qty','Node Qty']]
@@ -145,7 +107,7 @@ dailyShip.to_excel(writer, sheet_name= 'by_Date', index=False,header=True)
 
 # List Itemno Top sold.
 top_item=solddata.groupby('Itemno')[['Qty','Node Qty']].agg(sum).sort_values(by='Node Qty',ascending=False)
-print(top_item)
+# print(top_item)
 top_item.to_excel(writer, sheet_name= 'top_Item', index=True,header=True)
 
 
@@ -167,23 +129,12 @@ plt.savefig(f'{newDir}/Top20Model_%s.png' %filename)
 
 
 # plot (by_ShipTo)
-solddata.groupby('Ship To')['Qty','Node Qty'].agg(sum).nlargest(10,'Qty').plot.pie(autopct='%.1f%%', fontsize=8, figsize=(12,8), legend=False, subplots=True)
+solddata.groupby(['Ship To'])[['Qty','Node Qty']].agg(sum).nlargest(10,'Qty').plot.pie(autopct='%.1f%%', fontsize=8, figsize=(12,8), legend=False, subplots=True)
 # by_ShipTo=solddata.groupby('Ship To')[['Qty']].agg(sum).sort_values(by='Qty',ascending=True)
 # print(by_ShipTo)
 plt.savefig(f'{newDir}/ShipTo_%s_bySys.png' % filename)
 # plt.show()
 
-# solddata.groupby('Ship To')['Qty'].nlargest(10).plot.pie(autopct='%.2f', fontsize=10, figsize=(8,6), legend=False, subplots=False)
-# plt.title('By Country Sold Amount -System',fontsize=18, fontweight='bold')
-
-# plt.savefig(f'{newDir}/ShipTo_%s_bySys.png' % filename)
-# plt.show()
-
-# by_ShipTo['Node Qty'].nlargest(10).plot.pie(autopct='%.2f', fontsize=10, figsize=(8,6), legend=False, subplots=False)
-# plt.title('By Country Sold Amount -Nodes',fontsize=18, fontweight='bold')
-# plt.savefig(f'{newDir}/ShipTo_%s_byNode.png' % filename)
-
-# plt.show()
 
 # List Sales name and sum up sold Qty (System) and Node count;
 solddata.groupby('Name')[['Qty','Node Qty']].agg(sum).nlargest(20,'Qty').plot(kind='barh',figsize=(8,5))
@@ -202,9 +153,6 @@ by_sales_ship_item=solddata.groupby(['Name','Ship To','Itemno']).agg(sum)
 # print(solddata.groupby(['Name','Itemno']).agg(sum))
 sales_item=solddata.groupby(['Name','Itemno']).agg(sum)
 sales_item.to_excel(writer, sheet_name= 'by_Sales_Item', index=True,header=True)
-
-
-
 
 # Pivot method which list by Ship to country and Sales Name and summary them.
 pv_contrySale = solddata.pivot_table(index=['Ship To','Name'],aggfunc=[np.sum])
@@ -225,17 +173,19 @@ pv_CatIteConSal.to_excel(writer, sheet_name= 'by_Cat_Item_Country_Sales', index=
 # writer.close()
 
 
-# pv_contrySale.plot(kind='bar',figsize=(8,6),subplots=True,rot=270, fontsize=6)
-# plt.subplots_adjust(bottom = 0.3)
-# plt.tight_layout()
-# plt.savefig(f'{newDir}/Sale_Country_%s.png' %filename)
-#plt.show()
 
-print("=============================================")
-print("Up to date total sold Systems Qty: ", solddata['Qty'].sum())
-print("Up to date total sold Nodes total: ", solddata['Node Qty'].sum())
-print("=============================================")
+
+print("========= Month To Date =================")
+print("Total sold System Qty: ",'\t', solddata['Qty'].sum())
+print("Total sold Nodes Count: ",'\t', solddata['Node Qty'].sum())
+print("========= Best Selling Models ===========")
 print(top_item.head())
+print("========= Major Ship To Countries =======")
+print(solddata.groupby(['Ship To'])[['Qty','Node Qty']].agg(sum).nlargest(3,'Node Qty'))
+print("=== Best Product Families ===")
+# print(solddata.groupby('Cat')['Qty','Node Qty'].agg(sum).nlargest(3,'Node Qty'))
+print(solddata.groupby(['Cat'])[['Qty','Node Qty']].agg(sum).nlargest(3,'Node Qty'))
+print("=============================")
 # Write a file for daily update;
 solddata.to_excel('daily_output.xlsx')
 
@@ -245,9 +195,11 @@ naCat = solddata[solddata['Cat'].isnull()]
 naCat = naCat.drop(['Date','Qty','Node Qty','Sales','Ship To','Region','Order Type','Rep code','Name','Supervisor'], axis=1)
 
 naCat = naCat.drop_duplicates(subset = 'Itemno')
+print("========================================")
 print(naCat)
+print("========================================")
 itemno_new = itemno_cat.append(naCat).reset_index(drop=True)
 
 itemno_new.to_excel('itemno_cat.xlsx', index=False)
 writer.close()
-plt.show()
+# plt.show()
